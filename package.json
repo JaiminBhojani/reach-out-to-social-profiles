@@ -1,0 +1,33 @@
+{
+  "name": "reach-out-to-social-profiles",
+  "version": "1.0.0",
+  "description": "An AI agent that generates personalized outreach messages for GitHub contributors discovered by the social-profiles-from-github-repos agent.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsx src/api/server.ts",
+    "build": "tsc",
+    "start": "node dist/api/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.92.0",
+    "@hono/node-server": "^2.0.1",
+    "@hono/zod-validator": "^0.7.6",
+    "dotenv": "^17.4.2",
+    "hono": "^4.12.16",
+    "mongoose": "^9.6.1",
+    "zod": "^4.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"
+  }
+}

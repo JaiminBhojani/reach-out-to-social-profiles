@@ -1,0 +1,64 @@
+# Dependencies
+node_modules/
+jspm_packages/
+
+# Build output
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime / cache
+.npm
+.eslintcache
+.cache/
+.parcel-cache
+.next
+.nuxt
+.turbo
+.vite
+coverage/
+*.lcov
+.nyc_output
+
+# IDE / editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Misc
+*.pid
+*.seed
+*.pid.lock
+.pnp.*
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
