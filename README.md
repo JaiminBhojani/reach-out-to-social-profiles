@@ -27,6 +27,21 @@ An AI-powered outreach agent that generates personalized connection messages for
 - **Outreach Tracking:** Tracks generated messages in an `outreachHistory` array and lets you mark contributors as "connection sent" to avoid duplicates.
 - **Aggregate Stats:** Dashboard-ready stats showing total contributors, available channels, and outreach progress.
 
+## Current Drafting Flow
+
+When the project starts, it connects to MongoDB, fetches contributors where `isConnectionSent` is `false`, and stores a placeholder draft on each contributor document:
+
+```json
+{
+  "outreachDraft": {
+    "message": "hello",
+    "generatedAt": "..."
+  }
+}
+```
+
+The draft is stored directly on the contributor object in the shared `contributors` collection. The API route `POST /outreach/:username` can also refresh this placeholder draft for one pending contributor.
+
 ## Tech Stack
 
 - **API Framework:** [Hono](https://hono.dev/) on Node.js (`tsx`)
@@ -89,33 +104,22 @@ List all contributors from the shared database with optional filters.
 Get a single contributor's full profile.
 
 ### `POST /outreach/:username`
-Generate personalized outreach messages for a contributor using Claude AI.
-
-**Request Body:**
-```json
-{
-  "tone": "professional",
-  "context": "I admire their full-stack development skills"
-}
-```
-
-**Tone options:** `professional` | `casual` | `enthusiastic`
+Refresh the placeholder outreach draft for one pending contributor.
 
 **Response:**
 ```json
 {
   "success": true,
-  "outreach": {
+  "message": "Placeholder outreach draft stored for ritikkumar8z",
+  "outreachDraft": {
+    "message": "hello",
+    "generatedAt": "2026-05-06T..."
+  },
+  "contributor": {
     "username": "ritikkumar8z",
-    "linkedin": {
-      "channel": "linkedin",
-      "message": "Hi RiTiK, noticed your work on Microsoft's Game Control project...",
-      "charCount": 284
-    },
-    "twitter": {
-      "channel": "twitter",
-      "message": "Hey @ritikkumar8z! Came across your contributions...",
-      "charCount": 321
+    "outreachDraft": {
+      "message": "hello",
+      "generatedAt": "2026-05-06T..."
     }
   }
 }

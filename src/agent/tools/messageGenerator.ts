@@ -1,22 +1,21 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { env } from '../../lib/env';
-import type { IContributor } from '../../db/models/Contributor';
-import type { OutreachMessage, OutreachResponse } from '../state';
+import { env } from '../../lib/env.js';
+import type { IContributor } from '../../db/models/Contributor.js';
+import {
+  OutreachResponseSchema,
+  type OutreachResponse,
+  type OutreachTone,
+} from '../state.js';
 
-// Initialize Anthropic client
 const anthropic = env.ANTHROPIC_API_KEY ? new Anthropic({
   apiKey: env.ANTHROPIC_API_KEY,
 }) : null;
 
-/**
- * Builds a rich context string from a contributor's profile data
- * so Claude can generate highly personalized messages.
- */
 function buildProfileContext(contributor: IContributor): string {
-  const parts: string[] = [];
-
-  parts.push(`GitHub Username: ${contributor.username}`);
-  parts.push(`GitHub Profile: ${contributor.githubUrl}`);
+  const parts: string[] = [
+    `GitHub Username: ${contributor.username}`,
+    `GitHub Profile: ${contributor.githubUrl}`,
+  ];
 
   if (contributor.name) parts.push(`Full Name: ${contributor.name}`);
   if (contributor.bio) parts.push(`Bio: ${contributor.bio}`);
@@ -28,29 +27,48 @@ function buildProfileContext(contributor: IContributor): string {
   if (contributor.linkedinUrl) parts.push(`LinkedIn: ${contributor.linkedinUrl}`);
 
   const sourceProjects = contributor['source-project'];
-  if (sourceProjects && sourceProjects.length > 0) {
+  if (sourceProjects?.length) {
     parts.push(`Discovered from GitHub Projects: ${sourceProjects.join(', ')}`);
   }
 
   return parts.join('\n');
 }
 
-/**
- * Generates personalized outreach messages for a contributor across
- * all available channels (LinkedIn, Twitter, Email) using Claude AI.
- */
+function extractJsonObject(rawResponse: string): string {
+  const trimmed = rawResponse.trim().replace(/^```json\s*/i, '').replace(/```$/i, '').trim();
+  const start = trimmed.indexOf('{');
+  const end = trimmed.lastIndexOf('}');
+
+  if (start === -1 || end === -1 || end <= start) {
+    throw new Error('Claude response did not contain a JSON object.');
+  }
+
+  return trimmed.slice(start, end + 1);
+}
+
+function withCharacterCounts(outreach: OutreachResponse): OutreachResponse {
+  if (outreach.linkedin) {
+    outreach.linkedin.charCount = outreach.linkedin.message.length;
+  }
+  if (outreach.twitter) {
+    outreach.twitter.charCount = outreach.twitter.message.length;
+  }
+  if (outreach.email) {
+    outreach.email.charCount = outreach.email.message.length;
+  }
+
+  return outreach;
+}
+
 export async function generateOutreachMessages(
   contributor: IContributor,
   userContext?: string,
-  tone: 'professional' | 'casual' | 'enthusiastic' = 'professional',
+  tone: OutreachTone = 'professional',
 ): Promise<OutreachResponse> {
   if (!anthropic) {
     throw new Error('Anthropic API key is missing. Cannot generate outreach messages.');
   }
 
-  const profileContext = buildProfileContext(contributor);
-
-  // Determine which channels are available for this contributor
   const hasLinkedin = !!contributor.linkedinUrl;
   const hasTwitter = !!contributor.twitterUsername;
   const hasEmail = !!contributor.email;
@@ -59,14 +77,14 @@ export async function generateOutreachMessages(
     throw new Error(`No contact channels available for ${contributor.username}. They have no LinkedIn, Twitter, or Email on file.`);
   }
 
-  // Build the channel-specific instructions
   const channelInstructions: string[] = [];
 
   if (hasLinkedin) {
     channelInstructions.push(`
       "linkedin": {
         "channel": "linkedin",
-        "message": "<A LinkedIn connection request note. MUST be under 300 characters. Be concise, warm, and reference something specific about their work.>"
+        "message": "<LinkedIn connection note under 300 characters. Be concise, warm, and specific.>",
+        "charCount": 0
       }`);
   }
 
@@ -74,7 +92,8 @@ export async function generateOutreachMessages(
     channelInstructions.push(`
       "twitter": {
         "channel": "twitter",
-        "message": "<A Twitter/X DM. Keep it casual and under 500 characters. Reference their open-source work or bio.>"
+        "message": "<Twitter/X DM under 500 characters. Keep it casual and specific.>",
+        "charCount": 0
       }`);
   }
 
@@ -82,14 +101,15 @@ export async function generateOutreachMessages(
     channelInstructions.push(`
       "email": {
         "channel": "email",
-        "subject": "<A compelling email subject line, under 60 characters>",
-        "message": "<A professional cold email body. 3-5 sentences max. Include a clear call-to-action.>"
+        "subject": "<Email subject under 60 characters>",
+        "message": "<Professional cold email body. 3-5 sentences max with a soft call-to-action.>",
+        "charCount": 0
       }`);
   }
 
-  const toneGuide = {
+  const toneGuide: Record<OutreachTone, string> = {
     professional: 'Keep a polished, professional tone. Be respectful of their time.',
-    casual: 'Use a friendly, casual tone like you\'re messaging a fellow developer. Keep it relaxed.',
+    casual: "Use a friendly, casual tone like you are messaging a fellow developer. Keep it relaxed.",
     enthusiastic: 'Be genuinely excited and energetic. Show passion for their work and open-source contributions.',
   };
 
@@ -100,56 +120,39 @@ TONE: ${toneGuide[tone]}
 ${userContext ? `ADDITIONAL CONTEXT FROM SENDER: ${userContext}` : ''}
 
 CONTRIBUTOR PROFILE:
-${profileContext}
+${buildProfileContext(contributor)}
 
 Generate outreach messages for the available channels. Each message should:
-- Reference something SPECIFIC about this person (their bio, company, project, location)
-- Feel genuine and personalized, NOT templated
-- Have a clear reason for reaching out (open-source collaboration, learning from their work, networking)
-- Include a soft call-to-action
+- Reference something specific about this person, such as their bio, company, project, location, or GitHub work.
+- Feel genuine and personalized, not templated.
+- Have a clear reason for reaching out around open-source collaboration, learning from their work, or developer networking.
+- Include a soft call-to-action.
 
-Respond ONLY with a valid JSON object in this exact format (only include channels that are available):
+Respond only with a valid JSON object in this exact shape, including only available channels:
 {
   "username": "${contributor.username}",
   ${channelInstructions.join(',\n')}
 }
 
-No markdown formatting, no preamble, no explanation. Just the JSON.`;
+Do not include markdown, a preamble, or an explanation.`;
 
   console.log(`[MessageGenerator] Asking Claude to generate outreach for ${contributor.username}...`);
 
   const message = await anthropic.messages.create({
     model: 'claude-opus-4-5',
     max_tokens: 800,
-    system: 'You are a networking outreach assistant. Generate personalized, genuine outreach messages. Respond ONLY with valid JSON. No markdown, no preamble.',
-    messages: [
-      {
-        role: 'user',
-        content: prompt,
-      },
-    ],
+    system: 'You are a networking outreach assistant. Generate personalized, genuine outreach messages. Respond only with valid JSON.',
+    messages: [{ role: 'user', content: prompt }],
   });
 
-  // Parse the JSON response
-  const rawResponse = message.content[0].type === 'text' ? message.content[0].text : '{}';
-  const cleanJson = rawResponse.trim().replace(/^```json/, '').replace(/```$/, '').trim();
+  const rawResponse = message.content[0]?.type === 'text' ? message.content[0].text : '';
+  const parsedJson = JSON.parse(extractJsonObject(rawResponse));
+  const outreach = withCharacterCounts(OutreachResponseSchema.parse(parsedJson));
 
-  const parsed = JSON.parse(cleanJson) as OutreachResponse;
-
-  // Add character counts
-  if (parsed.linkedin) {
-    parsed.linkedin.charCount = parsed.linkedin.message.length;
-  }
-  if (parsed.twitter) {
-    parsed.twitter.charCount = parsed.twitter.message.length;
-  }
-  if (parsed.email) {
-    parsed.email.charCount = parsed.email.message.length;
-  }
-
-  console.log(`[MessageGenerator] Generated outreach for ${contributor.username}:`,
-    [hasLinkedin && 'LinkedIn', hasTwitter && 'Twitter', hasEmail && 'Email'].filter(Boolean).join(', ')
+  console.log(
+    `[MessageGenerator] Generated outreach for ${contributor.username}:`,
+    [outreach.linkedin && 'LinkedIn', outreach.twitter && 'Twitter', outreach.email && 'Email'].filter(Boolean).join(', '),
   );
 
-  return parsed;
+  return outreach;
 }

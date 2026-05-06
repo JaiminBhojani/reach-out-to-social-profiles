@@ -1,26 +1,25 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import type { Contributor } from '../../agent/state.js';
 
-// Matches the schema from the first project exactly so both projects share the same collection
-export interface IContributor extends Document {
-  username: string;
-  avatarUrl: string | null;
-  name: string | null;
-  email: string | null;
-  blog: string | null;
-  twitterUsername: string | null;
-  linkedinUrl: string | null;
-  bio: string | null;
-  company: string | null;
-  location: string | null;
-  githubUrl: string;
-  'source-project': string[];
+export interface IOutreachHistoryEntry {
+  channel: 'linkedin' | 'twitter' | 'email';
+  message: string;
+  subject?: string;
+  generatedAt: Date;
+  sentAt?: Date;
+}
+
+export interface IOutreachDraft {
+  message: string;
+  generatedAt: Date;
+}
+
+// Keep the shared contributor fields aligned with the discovery agent, then add outreach metadata.
+export interface IContributor extends Omit<Contributor, 'isConnectionSent'>, Document {
   isConnectionSent: boolean;
-  outreachHistory: {
-    channel: string;
-    message: string;
-    subject?: string;
-    generatedAt: Date;
-  }[];
+  'source-project': string[];
+  outreachDraft?: IOutreachDraft;
+  outreachHistory: IOutreachHistoryEntry[];
 }
 
 const ContributorSchema: Schema = new Schema({
@@ -37,12 +36,17 @@ const ContributorSchema: Schema = new Schema({
   githubUrl: { type: String, required: true },
   'source-project': { type: [String], default: [] },
   isConnectionSent: { type: Boolean, default: false },
+  outreachDraft: {
+    message: { type: String },
+    generatedAt: { type: Date },
+  },
   outreachHistory: {
     type: [{
-      channel: { type: String, required: true },
+      channel: { type: String, enum: ['linkedin', 'twitter', 'email'], required: true },
       message: { type: String, required: true },
       subject: { type: String },
       generatedAt: { type: Date, default: Date.now },
+      sentAt: { type: Date },
     }],
     default: [],
   },
