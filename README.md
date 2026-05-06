@@ -29,18 +29,24 @@ An AI-powered outreach agent that generates personalized connection messages for
 
 ## Current Drafting Flow
 
-When the project starts, it connects to MongoDB, fetches contributors where `isConnectionSent` is `false`, and stores a placeholder draft on each contributor document:
+When the project starts, it connects to MongoDB, fetches contributors where `isConnectionSent` is `false`, researches their available public profile/project context, and stores a personalized draft on each contributor document:
 
 ```json
 {
   "outreachDraft": {
-    "message": "hello",
-    "generatedAt": "..."
+    "subject": "I found you through your contribution in OpenClaw",
+    "message": "Hey ...",
+    "generatedAt": "...",
+    "research": {
+      "displayName": "...",
+      "sourceProjects": ["..."],
+      "sources": []
+    }
   }
 }
 ```
 
-The draft is stored directly on the contributor object in the shared `contributors` collection. The API route `POST /outreach/:username` can also refresh this placeholder draft for one pending contributor.
+The draft is stored directly on the contributor object in the shared `contributors` collection. The API route `POST /outreach/:username` can also refresh this personalized draft for one pending contributor.
 
 ## Tech Stack
 
@@ -104,21 +110,28 @@ List all contributors from the shared database with optional filters.
 Get a single contributor's full profile.
 
 ### `POST /outreach/:username`
-Refresh the placeholder outreach draft for one pending contributor.
+Refresh the personalized outreach draft for one pending contributor.
 
 **Response:**
 ```json
 {
   "success": true,
-  "message": "Placeholder outreach draft stored for ritikkumar8z",
+  "message": "Personalized outreach draft stored for ritikkumar8z",
   "outreachDraft": {
-    "message": "hello",
-    "generatedAt": "2026-05-06T..."
+    "subject": "I found you through your contribution in OpenClaw",
+    "message": "Hey RiTiK, ...",
+    "generatedAt": "2026-05-06T...",
+    "research": {
+      "displayName": "RiTiK",
+      "sourceProjects": ["https://github.com/..."],
+      "sources": []
+    }
   },
   "contributor": {
     "username": "ritikkumar8z",
     "outreachDraft": {
-      "message": "hello",
+      "subject": "I found you through your contribution in OpenClaw",
+      "message": "Hey RiTiK, ...",
       "generatedAt": "2026-05-06T..."
     }
   }

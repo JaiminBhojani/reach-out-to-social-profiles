@@ -23,8 +23,10 @@ export const ContributorSchema = z.object({
   'source-project': z.array(z.string()).default([]),
   isConnectionSent: z.boolean().optional(),
   outreachDraft: z.object({
+    subject: z.string(),
     message: z.string(),
     generatedAt: z.coerce.date(),
+    research: z.record(z.string(), z.unknown()).optional(),
   }).optional(),
 });
 

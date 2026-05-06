@@ -29,7 +29,7 @@ app.post('/:username', async (c) => {
 
     return c.json({
       success: true,
-      message: `Placeholder outreach draft stored for ${username}`,
+      message: `Personalized outreach draft stored for ${username}`,
       outreachDraft: updated?.outreachDraft,
       contributor: updated,
     });

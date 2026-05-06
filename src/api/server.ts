@@ -26,7 +26,7 @@ console.log(`Starting server on port ${port}...`);
 connectDB()
   .then(async () => {
     const result = await draftPendingOutreachMessages();
-    console.log(`[OutreachDrafts] Drafted placeholder messages for ${result.modified}/${result.matched} pending contributors.`);
+    console.log(`[OutreachDrafts] Drafted personalized messages for ${result.modified}/${result.matched} pending contributors. Failed: ${result.failed}.`);
   })
   .catch(console.error);
 

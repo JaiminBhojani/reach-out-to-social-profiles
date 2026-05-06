@@ -10,8 +10,10 @@ export interface IOutreachHistoryEntry {
 }
 
 export interface IOutreachDraft {
+  subject: string;
   message: string;
   generatedAt: Date;
+  research?: Record<string, unknown>;
 }
 
 // Keep the shared contributor fields aligned with the discovery agent, then add outreach metadata.
@@ -37,8 +39,10 @@ const ContributorSchema: Schema = new Schema({
   'source-project': { type: [String], default: [] },
   isConnectionSent: { type: Boolean, default: false },
   outreachDraft: {
+    subject: { type: String },
     message: { type: String },
     generatedAt: { type: Date },
+    research: { type: Schema.Types.Mixed },
   },
   outreachHistory: {
     type: [{
