@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 jspm_packages/
+implementation_plan.md
 
 # Build output
 dist/
