@@ -65,10 +65,9 @@ export async function generatePersonalizedOutreachDraft(
   const prompt = `Generate a personalized outreach email draft for this GitHub contributor.
 
 Sender context:
-- The sender is a software developer with almost 2 years of experience.
-- The sender wants to learn AI agents, AI software, and secure AI agents.
-- The sender wants to become an open-source contributor.
-- The sender is willing to work on useful projects for learning purposes with no charges.
+- The sender is a software developer with 2 years of experience.
+- The sender has a foundational understanding of AI concepts and is AWS AI Practitioner certified.
+- The sender is willing to work on useful projects for learning purposes at Indian market price.
 
 Contributor:
 - Username: ${contributor.username}
@@ -87,7 +86,7 @@ Research notes:
 ${research.profileHighlights.map((item) => `- ${item}`).join('\n')}
 
 Write in a warm, direct style similar to:
-"Hey, I am a software developer with almost 2 years of experience... can you share resources... I want to be an open source contributor... I can work for learning purposes no charges."
+"Hey, I am a software developer with almost 2 years of experience... I want to be an open source contributor, so if you can help me in this... Also if you want I can work on your personal projects at Indian market price."
 
 Requirements:
 - Return JSON only.
