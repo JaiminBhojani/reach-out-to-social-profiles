@@ -1,14 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import type { Contributor } from '../../agent/state.js';
 
-export interface IOutreachHistoryEntry {
-  channel: 'linkedin' | 'twitter' | 'email';
-  message: string;
-  subject?: string;
-  generatedAt: Date;
-  sentAt?: Date;
-}
-
 export interface IOutreachDraft {
   subject: string;
   message: string;
@@ -21,7 +13,6 @@ export interface IContributor extends Omit<Contributor, 'isConnectionSent'>, Doc
   isConnectionSent: boolean;
   'source-project': string[];
   outreachDraft?: IOutreachDraft;
-  outreachHistory: IOutreachHistoryEntry[];
 }
 
 const ContributorSchema: Schema = new Schema({
@@ -43,16 +34,6 @@ const ContributorSchema: Schema = new Schema({
     message: { type: String },
     generatedAt: { type: Date },
     research: { type: Schema.Types.Mixed },
-  },
-  outreachHistory: {
-    type: [{
-      channel: { type: String, enum: ['linkedin', 'twitter', 'email'], required: true },
-      message: { type: String, required: true },
-      subject: { type: String },
-      generatedAt: { type: Date, default: Date.now },
-      sentAt: { type: Date },
-    }],
-    default: [],
   },
 }, {
   timestamps: true, // Automatically manages createdAt and updatedAt

@@ -1,11 +1,5 @@
 import { z } from 'zod';
 
-export const ChannelSchema = z.enum(['linkedin', 'twitter', 'email']);
-export type OutreachChannel = z.infer<typeof ChannelSchema>;
-
-export const ToneSchema = z.enum(['professional', 'casual', 'enthusiastic']);
-export type OutreachTone = z.infer<typeof ToneSchema>;
-
 // Contributor schema representing the shared discovery-agent data model.
 export const ContributorSchema = z.object({
   username: z.string(),
@@ -31,28 +25,3 @@ export const ContributorSchema = z.object({
 });
 
 export type Contributor = z.infer<typeof ContributorSchema>;
-
-export const OutreachMessageSchema = z.object({
-  channel: ChannelSchema,
-  subject: z.string().optional(),
-  message: z.string(),
-  charCount: z.number().int().nonnegative(),
-});
-
-export type OutreachMessage = z.infer<typeof OutreachMessageSchema>;
-
-export const OutreachRequestSchema = z.object({
-  context: z.string().trim().max(2000).optional(),
-  tone: ToneSchema.default('professional'),
-});
-
-export type OutreachRequest = z.infer<typeof OutreachRequestSchema>;
-
-export const OutreachResponseSchema = z.object({
-  username: z.string(),
-  linkedin: OutreachMessageSchema.optional(),
-  twitter: OutreachMessageSchema.optional(),
-  email: OutreachMessageSchema.optional(),
-});
-
-export type OutreachResponse = z.infer<typeof OutreachResponseSchema>;

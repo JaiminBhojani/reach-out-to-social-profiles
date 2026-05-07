@@ -23,8 +23,8 @@ An AI-powered outreach agent that generates personalized connection messages for
 
 - **Smart Filtering:** Query contributors by outreach status, available channels (LinkedIn, Twitter, Email), or search by name/username.
 - **AI-Powered Personalization:** Uses **Claude (Anthropic)** to generate context-aware outreach messages based on each contributor's bio, company, location, and the project they were discovered from.
-- **Multi-Channel Drafts:** Generates channel-appropriate messages — LinkedIn notes (≤300 chars), Twitter DMs, and cold emails with subject lines.
-- **Outreach Tracking:** Tracks generated messages in an `outreachHistory` array and lets you mark contributors as "connection sent" to avoid duplicates.
+- **Personalized Drafts:** Generates researched outreach subjects and messages using contributor profile and source-project context.
+- **Draft Storage:** Stores the latest draft directly on each contributor document as `outreachDraft`.
 - **Aggregate Stats:** Dashboard-ready stats showing total contributors, available channels, and outreach progress.
 
 ## Current Drafting Flow
@@ -135,15 +135,5 @@ Refresh the personalized outreach draft for one pending contributor.
       "generatedAt": "2026-05-06T..."
     }
   }
-}
-```
-
-### `POST /outreach/:username/mark-sent`
-Mark a contributor as having been reached out to.
-
-**Request Body:**
-```json
-{
-  "channel": "linkedin"
 }
 ```
