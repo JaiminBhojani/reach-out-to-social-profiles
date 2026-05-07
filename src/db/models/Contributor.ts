@@ -5,6 +5,9 @@ export interface IOutreachDraft {
   subject: string;
   message: string;
   generatedAt: Date;
+  sentAt?: Date;
+  emailTo?: string;
+  emailMessageId?: string;
   research?: Record<string, unknown>;
 }
 
@@ -33,6 +36,9 @@ const ContributorSchema: Schema = new Schema({
     subject: { type: String },
     message: { type: String },
     generatedAt: { type: Date },
+    sentAt: { type: Date },
+    emailTo: { type: String },
+    emailMessageId: { type: String },
     research: { type: Schema.Types.Mixed },
   },
 }, {

@@ -20,6 +20,9 @@ export const ContributorSchema = z.object({
     subject: z.string(),
     message: z.string(),
     generatedAt: z.coerce.date(),
+    sentAt: z.coerce.date().optional(),
+    emailTo: z.string().optional(),
+    emailMessageId: z.string().optional(),
     research: z.record(z.string(), z.unknown()).optional(),
   }).optional(),
 });
