@@ -4,9 +4,9 @@
   "description": "An AI agent that generates personalized outreach messages for GitHub contributors discovered by the social-profiles-from-github-repos agent.",
   "main": "index.js",
   "scripts": {
-    "dev": "tsx src/api/server.ts",
+    "dev": "tsx src/index.ts",
     "build": "tsc",
-    "start": "node dist/api/server.js",
+    "start": "node dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -18,9 +18,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.92.0",
-    "@hono/node-server": "^2.0.1",
     "dotenv": "^17.4.2",
-    "hono": "^4.12.16",
     "mongoose": "^9.6.1",
     "zod": "^4.4.2"
   },

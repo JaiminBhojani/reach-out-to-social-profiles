@@ -17,7 +17,6 @@ export const connectDB = async (): Promise<void> => {
     console.log(`[MongoDB] Successfully connected to database.`);
   } catch (error) {
     console.error(`[MongoDB] Failed to connect:`, error);
-    // Don't exit process in serverless environments, but we should log it
     throw error;
   }
 };

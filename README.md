@@ -1,139 +1,118 @@
-# Reach Out to Social Profiles — Outreach Agent
+# Reach Out to Social Profiles - Outreach Draft Agent
 
-An AI-powered outreach agent that generates personalized connection messages for GitHub contributors. This is the second half of a two-agent pipeline — it reads enriched contributor profiles stored in MongoDB by the [social-profiles-from-github-repos](https://github.com/JaiminBhojani/social-profiles-from-github-repos) agent and uses Claude AI to craft tailored outreach messages for LinkedIn, Twitter, and Email.
+This project is the second half of the outreach pipeline. It reads enriched contributor profiles from the same MongoDB database used by [`social-profiles-from-github-repos`](https://github.com/JaiminBhojani/social-profiles-from-github-repos), researches each pending profile, drafts a personalized outreach subject and message, and saves the draft back to MongoDB.
 
-## How It Works
+There is no API in this project. Running the project runs the drafting job.
 
-```
-┌──────────────────────────────┐          ┌──────────────────────────────┐
-│  Agent 1: Discovery          │          │  Agent 2: Outreach (this)    │
-│  social-profiles-from-       │  ──DB──▶ │  reach-out-to-social-        │
-│  github-repos                │          │  profiles                    │
-│                              │          │                              │
-│  • Scans GitHub repos        │          │  • Reads contributor data    │
-│  • Scrapes portfolios        │          │  • Generates personalized    │
-│  • Extracts contacts via AI  │          │    messages via Claude AI    │
-│  • Stores to MongoDB         │          │  • Tracks outreach status    │
-└──────────────────────────────┘          └──────────────────────────────┘
-                         ▲                          │
-                         └── Shared MongoDB Atlas ──┘
-```
+## Current Flow
 
-## Key Features
+When you run the project:
 
-- **Smart Filtering:** Query contributors by outreach status, available channels (LinkedIn, Twitter, Email), or search by name/username.
-- **AI-Powered Personalization:** Uses **Claude (Anthropic)** to generate context-aware outreach messages based on each contributor's bio, company, location, and the project they were discovered from.
-- **Personalized Drafts:** Generates researched outreach subjects and messages using contributor profile and source-project context.
-- **Draft Storage:** Stores the latest draft directly on each contributor document as `outreachDraft`.
-- **Aggregate Stats:** Dashboard-ready stats showing total contributors, available channels, and outreach progress.
+1. It connects to MongoDB.
+2. It fetches all contributor documents where:
 
-## Current Drafting Flow
+   ```js
+   isConnectionSent: false
+   ```
 
-When the project starts, it connects to MongoDB, fetches contributors where `isConnectionSent` is `false`, researches their available public profile/project context, and stores a personalized draft on each contributor document:
+3. For each pending contributor, it researches available context:
+   - GitHub profile
+   - source project repository
+   - blog or personal website, if present
+   - LinkedIn URL, if present
+   - Twitter/X profile, if present
 
-```json
+4. It uses Claude to draft a personalized outreach subject and message.
+5. It saves the draft on the same contributor document.
+6. It disconnects from MongoDB and exits.
+
+## MongoDB Output
+
+The draft is stored directly on the contributor object in the shared `contributors` collection:
+
+```js
 {
-  "outreachDraft": {
-    "subject": "I found you through your contribution in OpenClaw",
-    "message": "Hey ...",
-    "generatedAt": "...",
-    "research": {
-      "displayName": "...",
-      "sourceProjects": ["..."],
-      "sources": []
+  isConnectionSent: false,
+  outreachDraft: {
+    subject: "I found you through your contribution in OpenClaw",
+    message: "Hey ...",
+    generatedAt: "2026-05-07T...",
+    research: {
+      displayName: "...",
+      sourceProjects: ["..."],
+      primaryProject: "...",
+      profileHighlights: ["..."],
+      sources: [
+        {
+          kind: "github",
+          url: "https://github.com/...",
+          status: "fetched",
+          summary: "..."
+        }
+      ]
     }
   }
 }
 ```
 
-The draft is stored directly on the contributor object in the shared `contributors` collection. The API route `POST /outreach/:username` can also refresh this personalized draft for one pending contributor.
+`isConnectionSent` is not changed by this project. It stays `false`; this agent only prepares drafts.
+
+## Prompt Location
+
+The outreach prompt is written in:
+
+[src/agent/tools/outreachDraftGenerator.ts](src/agent/tools/outreachDraftGenerator.ts)
+
+The worker that loops through pending contributors is:
+
+[src/worker/draftPendingOutreach.ts](src/worker/draftPendingOutreach.ts)
 
 ## Tech Stack
 
-- **API Framework:** [Hono](https://hono.dev/) on Node.js (`tsx`)
-- **Validation:** [Zod](https://zod.dev/) for environment and request schemas
-- **AI Integration:** `@anthropic-ai/sdk` (Claude Opus 4.5)
-- **Database:** MongoDB & Mongoose (shared with Agent 1)
+- Node.js with TypeScript
+- MongoDB and Mongoose
+- Zod for environment/schema validation
+- `@anthropic-ai/sdk` for Claude draft generation
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js >= 24
-- MongoDB Atlas cluster (same one used by the discovery agent)
-- Anthropic API Key
+- MongoDB Atlas cluster used by the discovery agent
+- Anthropic API key
 
 ### Installation
 
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Create a `.env` file in the root directory:
-   ```env
-   PORT=3001
-   ANTHROPIC_API_KEY=sk-ant-your_api_key_here
-   MONGODB_URI=mongodb://your_atlas_connection_string
-   ```
+```bash
+npm install
+```
 
-### Running Locally
+Create a `.env` file in the root directory:
+
+```env
+ANTHROPIC_API_KEY=sk-ant-your_api_key_here
+MONGODB_URI=mongodb://your_atlas_connection_string
+```
+
+### Run
 
 ```bash
 npm run dev
 ```
 
-The server will start on `http://localhost:3001`.
+For a compiled run:
 
-## API Endpoints
+```bash
+npm run build
+npm start
+```
 
-### `GET /health`
-Health check.
+Expected log shape:
 
-### `GET /contributors`
-List all contributors from the shared database with optional filters.
-
-**Query Parameters:**
-| Param | Description |
-|-------|-------------|
-| `pending=true` | Only contributors not yet reached out to |
-| `hasLinkedin=true` | Only contributors with a LinkedIn URL |
-| `hasTwitter=true` | Only contributors with a Twitter username |
-| `hasEmail=true` | Only contributors with an email |
-| `search=query` | Search by username or name |
-| `limit=20` | Limit results (default: 50, max: 200) |
-| `skip=0` | Skip results for pagination |
-
-**Response** includes aggregate stats and paginated contributor list.
-
-### `GET /contributors/:username`
-Get a single contributor's full profile.
-
-### `POST /outreach/:username`
-Refresh the personalized outreach draft for one pending contributor.
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Personalized outreach draft stored for ritikkumar8z",
-  "outreachDraft": {
-    "subject": "I found you through your contribution in OpenClaw",
-    "message": "Hey RiTiK, ...",
-    "generatedAt": "2026-05-06T...",
-    "research": {
-      "displayName": "RiTiK",
-      "sourceProjects": ["https://github.com/..."],
-      "sources": []
-    }
-  },
-  "contributor": {
-    "username": "ritikkumar8z",
-    "outreachDraft": {
-      "subject": "I found you through your contribution in OpenClaw",
-      "message": "Hey RiTiK, ...",
-      "generatedAt": "2026-05-06T..."
-    }
-  }
-}
+```text
+[OutreachDrafts] Starting outreach draft generation...
+[MongoDB] Successfully connected to database.
+[OutreachDrafts] Researching and drafting for username...
+[OutreachDrafts] Drafted personalized messages for 5/5 pending contributors. Failed: 0.
 ```

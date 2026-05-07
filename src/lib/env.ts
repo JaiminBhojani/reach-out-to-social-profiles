@@ -5,7 +5,6 @@ import { config } from 'dotenv';
 config();
 
 const envSchema = z.object({
-  PORT: z.string().default('3001'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   MONGODB_URI: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
