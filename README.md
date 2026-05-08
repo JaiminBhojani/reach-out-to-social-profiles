@@ -24,10 +24,9 @@ When you run the project:
 
 4. It uses Claude to draft a personalized outreach subject and message.
 5. It saves the draft on the same contributor document.
-6. It loops through pending contributors again.
-7. If a contributor has an email and a saved draft, it sends the draft subject/message by SMTP.
-8. After a successful email send, it sets `isConnectionSent` to `true` and stores send metadata.
-9. It disconnects from MongoDB and exits.
+6. In the same iteration, if a contributor has an email and SMTP is configured, it sends the draft subject/message by SMTP.
+7. After a successful email send, it sets `isConnectionSent` to `true` and stores send metadata.
+8. It disconnects from MongoDB and exits.
 
 ## MongoDB Output
 
@@ -83,9 +82,7 @@ The worker that loops through pending contributors is:
 
 [src/worker/draftPendingOutreach.ts](src/worker/draftPendingOutreach.ts)
 
-The worker that sends pending email drafts is:
-
-[src/worker/sendPendingOutreachEmails.ts](src/worker/sendPendingOutreachEmails.ts)
+Email sending is handled inline in the same worker after drafting.
 
 ## Tech Stack
 
@@ -141,10 +138,9 @@ npm start
 Expected log shape:
 
 ```text
-[OutreachDrafts] Starting outreach draft generation...
+[OutreachFlow] Starting draft + email flow...
 [MongoDB] Successfully connected to database.
 [OutreachDrafts] Researching and drafting for username...
-[OutreachDrafts] Drafted personalized messages for 5/5 pending contributors. Failed: 0.
-[OutreachEmails] Starting email send flow...
-[OutreachEmails] Sent 2/2 pending email drafts. Skipped: 0. Failed: 0.
+[OutreachEmails] Sending email draft to username <person@example.com>...
+[OutreachFlow] Processed 5 pending contributors. Drafted: 5. Emailed: 2. Email skipped: 3. Failed: 0.
 ```
