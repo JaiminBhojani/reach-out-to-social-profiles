@@ -16,6 +16,7 @@ export const ContributorSchema = z.object({
   githubUrl: z.url(),
   'source-project': z.array(z.string()).default([]),
   isConnectionSent: z.boolean().optional(),
+  isEmailSent: z.boolean().optional(),
   outreachDraft: z.object({
     subject: z.string(),
     message: z.string(),

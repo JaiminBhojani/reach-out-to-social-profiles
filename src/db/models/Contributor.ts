@@ -12,8 +12,9 @@ export interface IOutreachDraft {
 }
 
 // Keep the shared contributor fields aligned with the discovery agent, then add outreach metadata.
-export interface IContributor extends Omit<Contributor, 'isConnectionSent'>, Document {
+export interface IContributor extends Omit<Contributor, 'isConnectionSent' | 'isEmailSent'>, Document {
   isConnectionSent: boolean;
+  isEmailSent: boolean;
   'source-project': string[];
   outreachDraft?: IOutreachDraft;
 }
@@ -32,6 +33,7 @@ const ContributorSchema: Schema = new Schema({
   githubUrl: { type: String, required: true },
   'source-project': { type: [String], default: [] },
   isConnectionSent: { type: Boolean, default: false },
+  isEmailSent: { type: Boolean, default: false },
   outreachDraft: {
     subject: { type: String },
     message: { type: String },

@@ -9,10 +9,10 @@ There is no API in this project. Running the project runs the drafting job.
 When you run the project:
 
 1. It connects to MongoDB.
-2. It fetches all contributor documents where:
+2. It fetches contributor documents where email outreach is not marked done (`isEmailSent` is not `true`):
 
    ```js
-   isConnectionSent: false
+   isEmailSent: { $ne: true }
    ```
 
 3. For each pending contributor, it researches available context:
@@ -25,7 +25,7 @@ When you run the project:
 4. It uses Claude to draft a personalized outreach subject and message.
 5. It saves the draft on the same contributor document.
 6. In the same iteration, if a contributor has an email and SMTP is configured, it sends the draft subject/message by SMTP.
-7. After a successful email send, it sets `isConnectionSent` to `true` and stores send metadata.
+7. It sets `isEmailSent` to `true` only after a successful send (and stores `outreachDraft.sentAt`, `emailTo`, `emailMessageId`). If there is no email, SMTP is missing, or sending fails, it sets `isEmailSent` to `false`. This worker does not change `isConnectionSent` — leave that flag for discovery or future channels.
 8. It disconnects from MongoDB and exits.
 
 ## MongoDB Output
@@ -34,7 +34,7 @@ The draft is stored directly on the contributor object in the shared `contributo
 
 ```js
 {
-  isConnectionSent: false,
+  isEmailSent: false,
   outreachDraft: {
     subject: "I found you through your contribution in OpenClaw",
     message: "Hey ...",
@@ -61,7 +61,7 @@ After a successful email send, the same document is updated:
 
 ```js
 {
-  isConnectionSent: true,
+  isEmailSent: true,
   outreachDraft: {
     sentAt: "2026-05-07T...",
     emailTo: "person@example.com",
@@ -70,7 +70,11 @@ After a successful email send, the same document is updated:
 }
 ```
 
-`isConnectionSent` stays `false` after drafting. It is changed to `true` only after an email is sent successfully.
+After each run, `isEmailSent` records whether an email was sent: `false` if there was no address or SMTP, or the send failed; `true` after a successful SMTP send. Contributors with `isEmailSent: true` are skipped on the next run. `isConnectionSent` is not updated by this job so you can use it later for other outreach channels.
+
+If you previously used an older version that set `isConnectionSent: true` after email but did not set `isEmailSent`, run a one-time backfill so those rows are not picked up again, for example:
+
+`db.contributors.updateMany({ isConnectionSent: true, isEmailSent: { $ne: true } }, { $set: { isEmailSent: true } })`
 
 ## Prompt Location
 

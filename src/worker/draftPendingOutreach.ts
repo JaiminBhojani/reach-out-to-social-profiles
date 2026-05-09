@@ -46,8 +46,10 @@ async function draftForContributor(contributor: IContributor): Promise<{ subject
   return draft;
 }
 
+const pendingEmailOutreachFilter = { isEmailSent: { $ne: true } };
+
 export async function draftPendingOutreachMessages(): Promise<DraftPendingOutreachResult> {
-  const contributors = await ContributorModel.find({ isConnectionSent: false });
+  const contributors = await ContributorModel.find(pendingEmailOutreachFilter);
 
   const missingFields = getMissingSmtpFields();
   const smtpConfigured = missingFields.length === 0;
@@ -84,6 +86,10 @@ export async function draftPendingOutreachMessages(): Promise<DraftPendingOutrea
       const email = contributor.email;
       if (!email || !transporter) {
         skippedEmail += 1;
+        await ContributorModel.updateOne(
+          { _id: contributor._id },
+          { $set: { isEmailSent: false } },
+        );
       } else {
         try {
           console.log(`[OutreachEmails] Sending email draft to ${contributor.username} <${email}>...`);
@@ -98,7 +104,7 @@ export async function draftPendingOutreachMessages(): Promise<DraftPendingOutrea
             { _id: contributor._id },
             {
               $set: {
-                isConnectionSent: true,
+                isEmailSent: true,
                 'outreachDraft.sentAt': new Date(),
                 'outreachDraft.emailTo': email,
                 'outreachDraft.emailMessageId': info.messageId,
@@ -111,6 +117,10 @@ export async function draftPendingOutreachMessages(): Promise<DraftPendingOutrea
           failed += 1;
           const message = error instanceof Error ? error.message : 'Unknown error';
           console.error(`[OutreachEmails] Failed for ${contributor.username}:`, message);
+          await ContributorModel.updateOne(
+            { _id: contributor._id },
+            { $set: { isEmailSent: false } },
+          );
         }
       }
     } catch (error) {
@@ -130,7 +140,7 @@ export async function draftPendingOutreachMessages(): Promise<DraftPendingOutrea
 }
 
 export async function draftContributorOutreach(username: string): Promise<boolean> {
-  const contributor = await ContributorModel.findOne({ username, isConnectionSent: false });
+  const contributor = await ContributorModel.findOne({ username, ...pendingEmailOutreachFilter });
 
   if (!contributor) {
     return false;
