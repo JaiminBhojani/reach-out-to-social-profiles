@@ -84,30 +84,35 @@ export async function draftPendingOutreachMessages(): Promise<DraftPendingOutrea
       const email = contributor.email;
       if (!email || !transporter) {
         skippedEmail += 1;
-        continue;
+      } else {
+        try {
+          console.log(`[OutreachEmails] Sending email draft to ${contributor.username} <${email}>...`);
+          const info = await transporter.sendMail({
+            from: env.SMTP_FROM!,
+            to: email,
+            subject: draft.subject,
+            text: draft.message,
+          });
+
+          await ContributorModel.updateOne(
+            { _id: contributor._id },
+            {
+              $set: {
+                isConnectionSent: true,
+                'outreachDraft.sentAt': new Date(),
+                'outreachDraft.emailTo': email,
+                'outreachDraft.emailMessageId': info.messageId,
+              },
+            },
+          );
+
+          emailed += 1;
+        } catch (error) {
+          failed += 1;
+          const message = error instanceof Error ? error.message : 'Unknown error';
+          console.error(`[OutreachEmails] Failed for ${contributor.username}:`, message);
+        }
       }
-
-      console.log(`[OutreachEmails] Sending email draft to ${contributor.username} <${email}>...`);
-      const info = await transporter.sendMail({
-        from: env.SMTP_FROM!,
-        to: email,
-        subject: draft.subject,
-        text: draft.message,
-      });
-
-      await ContributorModel.updateOne(
-        { _id: contributor._id },
-        {
-          $set: {
-            isConnectionSent: true,
-            'outreachDraft.sentAt': new Date(),
-            'outreachDraft.emailTo': email,
-            'outreachDraft.emailMessageId': info.messageId,
-          },
-        },
-      );
-
-      emailed += 1;
     } catch (error) {
       failed += 1;
       const message = error instanceof Error ? error.message : 'Unknown error';
